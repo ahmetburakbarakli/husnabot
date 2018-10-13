@@ -6,7 +6,19 @@ $data = json_decode($data, TRUE);
 
 $husnab0t = new husna($data);
 require_once("b0t.functions.php");
-require_once("priv8.php");
+
+/*blocking too many wildcards*/
+$cagrici=$husnab0t->getFirstWord();
+if($cagrici == "getirhoca") {
+  $devam=trim($husnab0t->getOtherWords());
+  if(substr_count($devam, '%') > 1) {
+    spamlamayin();
+  }
+  else {
+    require_once("priv8.php");
+  }
+}
+
 
 $husnab0t->addCommand("bilgiad","bilgiadFunc");
 $husnab0t->addCommand("mizahyab","mizahyabFunc");
@@ -18,6 +30,20 @@ $husnab0t->addCommand("euroad","avroadFunc");
 $husnab0t->addCommand("egonomiad","egonomiadFunc");
 $husnab0t->addCommand("havadurumuad","havadurumuadFunc");
 $husnab0t->addCommand("helb","helber");
+$husnab0t->addCommand("help","helber");
+$husnab0t->addCommand("neyesem","yemeksepeti");
+$husnab0t->addCommand("gunaydin","gunadyinFunc");
+$husnab0t->addCommand("günaydın","gunadyinFunc");
+$husnab0t->addCommand("boşyapıyolar","bojyabmaFunc");
+$husnab0t->addCommand("bojyapıyolar","bojyabmaFunc");
+$husnab0t->addCommand("bosyapiyolar","bojyabmaFunc");
+$husnab0t->addCommand("boşyapiyolar","bojyabmaFunc");
+$husnab0t->addCommand("bojyapiyolar","bojyabmaFunc");
+$husnab0t->addCommand("nasıl","beyle");
+$husnab0t->addCommand("nasil","beyle");
+$husnab0t->addCommand("java","jaava");
+$husnab0t->addCommand("bilimsiz","bilimsiz");
+$husnab0t->addCommand("muazzam","muazzam");
 //$husnab0t->addCommand("komutad","komutad");
 
 /* PUT NEW COMMANDS BELOW */

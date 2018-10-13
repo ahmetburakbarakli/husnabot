@@ -76,6 +76,7 @@ function mizahyabFunc()
 }
 /* mizahyab Function ENDS */
 
+
 /* fotoad Function STARTS */
 function fotoadFunc(){
         global $husnab0t;
@@ -170,7 +171,7 @@ function egonomiadFunc() {
 function havadurumuadFunc() {
 
           global $husnab0t;
-	  include('libs/turkeyweather.php');
+	        include('libs/turkeyweather.php');
           $weather = new TurkeyWeather();
 
           $obj1 = trim($husnab0t->getOtherWords());
@@ -192,11 +193,99 @@ function havadurumuadFunc() {
           $weather->district($district);
           $weather->getData();
 
-          $message = $weather->province()." ".$weather->district()."'da/de hava *".$weather->event()[turkish]."* ve sıcaklık *".$weather->temperature()."°*.";
-          $message = $message."\n\n"."hava çoh iyi hojam.";
+          if(strlen($weather->province()) > 1) {
+            $message = $weather->province()." ".$weather->district()." konumunda hava *".$weather->event()[turkish]."* ve sıcaklık *".$weather->temperature()."°*.";
+            $message = $message."\n\n"."hava çoh iyi hojam.";
+          }
+          else {
+            $message = "$obj1 diye bi yer yok hojam.";
+          }
           $husnab0t->sendMessage($message);
       }
 /* havadurumuad Function ENDS*/
+
+/* yemeksepeti function BEGINS*/
+
+function yemeksepeti() {
+
+          global $husnab0t;
+
+          $others=trim($husnab0t->getOtherWords());
+          $others=explode(" ",$others);
+          $othersC=count($others);
+          $minTutar = 0;
+          $coksatan = 0;
+          if(in_array("popi", $others) || in_array("popı", $others)) {
+            $coksatan = 1;
+          }
+          if(($othersC > 1 && $coksatan == 1) || ($othersC == 1 && $coksatan == 0)) {
+            $minTutar=$others[$coksatan];
+          }
+          $kampusteki="https://www.yemeksepeti.com/ankara/orta-dogu-teknik-universitesi-odtu-kampusu#sof:2|sob:true";
+          if($minTutar) {
+            $kampusteki.="|mbt:".$minTutar;
+          }
+          $simdiAcik=husnaCurl($kampusteki);
+          #preg_match_all('/<a class="restaurantName withTooltip" href="(.*?)" target="_parent">/msi', $simdiAcik, $restorantlar);
+          preg_match_all('/<a class="restaurantName withTooltip" href="(.*?)" target="_parent">(.*?)<span data-tooltip="(.*?)MinimumDeliveryPrice&quot;:(.*?),&quot(.*?)">/msi', $simdiAcik, $restorantlar);
+          #1- links, 4- min delivery limits
+          if($minTutar) {
+            $restorantlarYeni=array();
+            $Yenisay=count($restorantlar[1]);
+            for($i=0;$i<$Yenisay;$i++) {
+              if($restorantlar[4][$i] < $minTutar) {
+                array_push($restorantlarYeni,array($restorantlar[0][$i],$restorantlar[1][$i]));
+              }
+            }
+            $restorantlar=$restorantlarYeni;
+          }
+
+          $restorantSay=count($restorantlar[1]);
+          $restorantSec=rand(1,$restorantSay)-1;
+          $restorant="https://www.yemeksepeti.com".$restorantlar[1][$restorantSec];
+          $menuGetir=husnaCurl($restorant);
+          preg_match_all('/<meta name="twitter:title" content="(.*?), Ankara Online/msi', $menuGetir, $restorantAdi);
+
+          if($coksatan) {
+            preg_match_all('/<div class="productName">(.*?)<a href="javascript\:void\(0\)\;" data-catalog-name="TR_ANKARA" class="getProductDetail" data-product-id="(.*?)" data-category-name="(.*?)" data-top-sold-product="true">(.*?)<\/a>(.*?)<\/div>(.*?)<span class="productInfo">(.*?)<p>(.*?)<\/p>(.*?)<\/span>(.*?)<span class="pull-right newPrice">(.*?)<\/span>/msi', $menuGetir, $yemekler);
+            $menuSay=count($yemekler[4]);
+          }
+          else {
+            preg_match_all('/<div class="productName">(.*?)<a href="javascript\:void\(0\)\;" data-catalog-name="TR_ANKARA" class="getProductDetail" data-product-id="(.*?)" data-category-name="(.*?)" data-top-sold-product="(.*?)">(.*?)<\/a>(.*?)<\/div>(.*?)<span class="productInfo">(.*?)<p>(.*?)<\/p>(.*?)<\/span>(.*?)<span class="pull-right newPrice">(.*?)<\/span>/msi', $menuGetir, $yemekler);
+            $menuSay=count($yemekler[5]);
+          }
+
+          $yemekSec=rand(1,$menuSay)-1;
+
+          if($coksatan) {
+            $yemek=$yemekler[4][$yemekSec];
+            $icerik=$yemekler[8][$yemekSec];
+            $fiyat=$yemekler[11][$yemekSec];
+          }
+          else {
+            $yemek=$yemekler[5][$yemekSec];
+            $icerik=$yemekler[9][$yemekSec];
+            $fiyat=$yemekler[12][$yemekSec];
+          }
+          @preg_match_all('/<i class="ys-icons ys-icons-foto" data-imagepath="(.*?)" data-productname="(.*?)"><\/i>/msi', $yemek, $yemekozel);
+          if(strlen($yemekozel[2][0]) > 2) {
+            $yemek=$yemekozel[2][0];
+          }
+          $yemek=html_entity_decode($yemek);
+          $sonuc="hojam bence *".$restorantAdi[1][0]."* mekanından *".$yemek."* yiyin. ";
+          if(strlen($icerik) > 0) {
+            $icerik=html_entity_decode($icerik);
+            $sonuc.= "içinde *".$icerik."* var, ";
+          }
+          $sonuc.= "fiyatı da *".$fiyat."*, güzel bence. şuradan direkt sipariş verebilirsiniz: $restorant";
+
+
+          $husnab0t->sendMessage($sonuc);
+
+}
+
+
+/* yemeksepeti function ENDS*/
 
 function helber(){
 	global $husnab0t;
@@ -214,6 +303,62 @@ function komutad(){
 	$encodedMarkup = json_encode($replyMarkup);
 	$husnab0t->sendMessage_w_markup("komut seç bro",$encodedMarkup);
 }
+
+/* gunaydin Function STARTS	*/
+function gunadyinFunc(){
+	global $husnab0t;
+	$husnab0t->sendMessage("hepinize günaydınlar :)");
+	havadurumuadFunc();
+	yemekteNeVar();
+	egonomiadFunc();
+}
+
+/* gunaydin Function ENDS */
+
+/* bojyabmaFunc Function STARTS*/
+function bojyabmaFunc(){
+	global $husnab0t;
+	$husnab0t->sendPhoto("https://s2.eksiup.com/f4efffa4d670.jpeg","",1);
+}
+/* bojyabmaFunc Function ENDS */
+
+/* muazzam Function STARTS*/
+function muazzam(){
+	global $husnab0t;
+	$husnab0t->sendPhoto("https://s3.eksiup.com/66e49a926940.jpg","",1);
+}
+/* muazzam Function ENDS */
+
+/* bilimsiz Function STARTS*/
+function bilimsiz(){
+	global $husnab0t;
+	$husnab0t->sendPhoto("https://s3.eksiup.com/eb5ffea94370.jpg","",1);
+}
+/* bilimsiz Function ENDS */
+
+/* java Function STARTS*/
+function jaava(){
+	global $husnab0t;
+	$husnab0t->sendPhoto("https://s3.eksiup.com/4aed51458925.jpg","",1);
+}
+/* java Function ENDS */
+
+/* beyle Function STARTS*/
+function beyle(){
+	global $husnab0t;
+	$husnab0t->sendPhoto("https://s3.eksiup.com/fc55f421b312.jpg","",1);
+}
+/* beyle Function ENDS */
+
+/* spam Function STARTS*/
+function spamlamayin(){
+	global $husnab0t;
+	$husnab0t->sendMessage("hojam botu spamlamayin",1);
+}
+/* spam Function ENDS */
+
+
+
 
 /* PUT NEW FEATURES BELOW */
 
